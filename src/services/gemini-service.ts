@@ -18,10 +18,14 @@ export class GeminiService {
       try {
         const text = await generateGeminiContent(systemPrompt, userPrompt);
         const cleaned = text
-          .replace(/\s*/g, "")
+          .replace(/```json\s*/gi, "")
+          .replace(/\s*```/g, "")
           .trim();
+        const start = cleaned.indexOf("{");
+        const end = cleaned.lastIndexOf("}");
+        const json = start !== -1 && end !== -1 ? cleaned.slice(start, end + 1) : cleaned;
 
-        return JSON.parse(cleaned) as T;
+        return JSON.parse(json) as T;
       } catch (error) {
         lastError = error as Error;
         console.warn(

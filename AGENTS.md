@@ -49,5 +49,5 @@ Content intelligence system built with Next.js 15.1 (App Router), Supabase, Gemi
 - **IdeatorAgent** (`src/agents/ideator/`): Takes briefing → Gemini → 3 content ideas
 - **PackagerAgent** (`src/agents/packager/`): Takes idea → Gemini → full package (script, captions, prompts, growth tips) — streamed via SSE in 3 phases
 
-## Known Issues
-- `GeminiService.generateJSON()` removes all whitespace with regex — fragile for string content
+## Fixed Issues
+- ~~`GeminiService.generateJSON()` removia todo whitespace com regex — agora extrai JSON entre `{}` e remove markdown fences~~
