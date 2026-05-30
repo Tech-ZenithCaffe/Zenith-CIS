@@ -1,0 +1,67 @@
+# --- PESADOS & DESNECESSÁRIOS ---
+node_modules/
+.next/
+dist/
+build/
+out/
+.cache/
+.vercel/
+
+# --- ASSETS ---
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.ico
+*.mp4
+*.webm
+*.pdf
+*.zip
+*.tar.gz
+
+# SVG pode ser útil para entender UI
+# *.svg
+
+# --- MÍDIA DO PROJETO ---
+media/
+assets/
+videos/
+photos/
+campaigns/
+raw_content/
+
+# --- LOGS & DIAGNÓSTICOS ---
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+coverage/
+.clinic/
+
+# --- DADOS SENSÍVEIS ---
+.env
+.env.*
+!.env.example
+
+*.pem
+*.key
+certs/
+
+# --- IDE & SISTEMA OPERACIONAL ---
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# --- BANCO DE DADOS ---
+*.sql
+supabase/.temp/
+
+# --- CACHE DE FERRAMENTAS ---
+.turbo/
+.parcel-cache/
+
+# --- TESTES ---
+playwright-report/
+test-results/
