@@ -5,10 +5,16 @@ export type ContentStatus = Database["public"]["Enums"]["content_status"];
 export type BusinessGoal = Database["public"]["Enums"]["business_goal"];
 
 export interface ContentIdea {
+  id: string;
   title: string;
   conceptDescription: string;
   format: ContentFormat;
   businessGoal: BusinessGoal;
+  market: "portugal" | "spain";
+  mood: string | null;
+  targetAudience: string | null;
+  is_saved: boolean;
+  created_at: string;
 }
 
 export interface ContentInput {

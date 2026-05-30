@@ -48,10 +48,16 @@ export class IdeasService extends BaseService {
 
   private toContentIdea(row: Record<string, unknown>): ContentIdea {
     return {
+      id: row.id as string,
       title: row.idea_title as string,
       conceptDescription: row.idea_description as string,
       format: row.format as ContentIdea["format"],
       businessGoal: row.business_goal as ContentIdea["businessGoal"],
+      market: row.market as ContentIdea["market"],
+      mood: row.mood as ContentIdea["mood"],
+      targetAudience: row.target_audience as ContentIdea["targetAudience"],
+      is_saved: row.is_saved as boolean,
+      created_at: row.created_at as string,
     };
   }
 }

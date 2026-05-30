@@ -1,9 +1,66 @@
 "use client";
 
+import { useEffect, useState } from "react";
+
 export default function SettingsPage() {
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [market, setMarket] = useState("portugal");
+  const [role, setRole] = useState("creator_portugal");
+  const [saving, setSaving] = useState(false);
+  const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch("/api/settings")
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.status === "success" && data.profile) {
+          setName(data.profile.name ?? "");
+          setEmail(data.profile.email ?? "");
+          setMarket(data.profile.market ?? "portugal");
+          setRole(data.profile.role ?? "creator_portugal");
+        }
+      })
+      .catch(console.error)
+      .finally(() => setLoading(false));
+  }, []);
+
+  async function handleSave() {
+    setSaving(true);
+    setMessage(null);
+
+    try {
+      const res = await fetch("/api/settings", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, market, role }),
+      });
+
+      const data = await res.json();
+
+      if (data.status === "success") {
+        setMessage({ type: "success", text: "Perfil atualizado com sucesso!" });
+      } else {
+        setMessage({ type: "error", text: data.message ?? "Erro ao guardar" });
+      }
+    } catch {
+      setMessage({ type: "error", text: "Erro ao guardar alterações" });
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-neutral-200 border-t-brand-600" />
+      </div>
+    );
+  }
+
   return (
     <div className="mx-auto max-w-2xl space-y-8">
-      {/* Cabeçalho */}
       <div>
         <h1 className="font-display text-2xl font-bold text-brand-900">
           Definições
@@ -13,16 +70,18 @@ export default function SettingsPage() {
         </p>
       </div>
 
-      {/* Perfil */}
       <section className="rounded-xl border border-neutral-200 bg-white p-6">
         <h2 className="font-display text-lg font-semibold text-brand-800">
           Perfil
         </h2>
         <div className="mt-4 space-y-4">
           <div>
-            <label className="block text-sm font-medium text-neutral-700">Nome</label>
+            <label htmlFor="name" className="block text-sm font-medium text-neutral-700">Nome</label>
             <input
+              id="name"
               type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
               placeholder="O teu nome"
               className="mt-1 block w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm shadow-sm placeholder:text-neutral-400 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
             />
@@ -32,7 +91,7 @@ export default function SettingsPage() {
             <input
               type="email"
               disabled
-              placeholder="email@exemplo.com"
+              value={email}
               className="mt-1 block w-full cursor-not-allowed rounded-lg border border-neutral-200 bg-neutral-50 px-3 py-2 text-sm text-neutral-500 shadow-sm"
             />
             <p className="mt-1 text-xs text-neutral-400">O email não pode ser alterado</p>
@@ -40,26 +99,35 @@ export default function SettingsPage() {
         </div>
       </section>
 
-      {/* Mercado */}
       <section className="rounded-xl border border-neutral-200 bg-white p-6">
         <h2 className="font-display text-lg font-semibold text-brand-800">
           Mercado
         </h2>
         <div className="mt-4 space-y-4">
           <div>
-            <label className="block text-sm font-medium text-neutral-700">
+            <label htmlFor="market" className="block text-sm font-medium text-neutral-700">
               Mercado Primário
             </label>
-            <select className="mt-1 block w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm shadow-sm focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500">
+            <select
+              id="market"
+              value={market}
+              onChange={(e) => setMarket(e.target.value)}
+              className="mt-1 block w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm shadow-sm focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
+            >
               <option value="portugal">Portugal</option>
               <option value="spain">Espanha</option>
             </select>
           </div>
           <div>
-            <label className="block text-sm font-medium text-neutral-700">
+            <label htmlFor="role" className="block text-sm font-medium text-neutral-700">
               Role
             </label>
-            <select className="mt-1 block w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm shadow-sm focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500">
+            <select
+              id="role"
+              value={role}
+              onChange={(e) => setRole(e.target.value)}
+              className="mt-1 block w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm shadow-sm focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
+            >
               <option value="creator_portugal">Criador — Portugal</option>
               <option value="creator_spain">Criador — Espanha</option>
               <option value="admin">Administrador</option>
@@ -68,7 +136,6 @@ export default function SettingsPage() {
         </div>
       </section>
 
-      {/* Preferências */}
       <section className="rounded-xl border border-neutral-200 bg-white p-6">
         <h2 className="font-display text-lg font-semibold text-brand-800">
           Preferências
@@ -97,13 +164,25 @@ export default function SettingsPage() {
         </div>
       </section>
 
-      {/* Guardar */}
+      {message && (
+        <div
+          className={`rounded-lg px-4 py-2 text-sm ${
+            message.type === "success"
+              ? "bg-green-50 text-green-700"
+              : "bg-red-50 text-red-700"
+          }`}
+        >
+          {message.text}
+        </div>
+      )}
+
       <div className="flex justify-end">
         <button
-          type="button"
-          className="rounded-lg bg-brand-600 px-5 py-2 text-sm font-medium text-white transition-colors hover:bg-brand-700"
+          onClick={handleSave}
+          disabled={saving}
+          className="rounded-lg bg-brand-600 px-5 py-2 text-sm font-medium text-white transition-colors hover:bg-brand-700 disabled:cursor-not-allowed disabled:opacity-50"
         >
-          Guardar Alterações
+          {saving ? "A guardar..." : "Guardar Alterações"}
         </button>
       </div>
     </div>

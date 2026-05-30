@@ -8,7 +8,7 @@ export PATH="$NODE_PATH:$PATH"
 
 echo "Starting dev server on port $PORT..."
 
-npx.cmd next dev --port "$PORT" > /tmp/zenith-dev.log 2>&1 &
+HOSTNAME=0.0.0.0 "$NODE_PATH/npx.cmd" next dev --port "$PORT" > /tmp/zenith-dev.log 2>&1 &
 DEV_PID=$!
 echo "PID: $DEV_PID"
 

@@ -1,16 +1,41 @@
-import Link from "next/link";
+"use client";
 
-const stats = [
-  { label: "Ideias Pendentes", value: "—", href: "/ideas", color: "text-brand-600" },
-  { label: "Agendados Esta Semana", value: "—", href: "/calendar", color: "text-green-600" },
-  { label: "Publicados Este Mês", value: "—", href: "/calendar", color: "text-blue-600" },
-  { label: "Taxa de Engajamento", value: "—%", href: "#", color: "text-amber-600" },
+import Link from "next/link";
+import { useEffect, useState } from "react";
+
+const statConfig = [
+  { label: "Ideias Pendentes", key: "pendingIdeas", href: "/ideas", color: "text-brand-600" },
+  { label: "Agendados Esta Semana", key: "scheduledThisWeek", href: "/calendar", color: "text-green-600" },
+  { label: "Publicados Este Mês", key: "publishedThisMonth", href: "/calendar", color: "text-blue-600" },
+  { label: "Taxa de Engajamento", key: "engagement", href: "#", color: "text-amber-600" },
 ];
 
 export default function DashboardPage() {
+  const [metrics, setMetrics] = useState<Record<string, number | string>>({
+    pendingIdeas: "—",
+    scheduledThisWeek: "—",
+    publishedThisMonth: "—",
+    engagement: "—%",
+  });
+
+  useEffect(() => {
+    fetch("/api/dashboard")
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.status === "success") {
+          setMetrics({
+            pendingIdeas: data.metrics.pendingIdeas,
+            scheduledThisWeek: data.metrics.scheduledThisWeek,
+            publishedThisMonth: data.metrics.publishedThisMonth,
+            engagement: "—%",
+          });
+        }
+      })
+      .catch(console.error);
+  }, []);
+
   return (
     <div className="space-y-8">
-      {/* Título */}
       <div>
         <h1 className="font-display text-2xl font-bold text-brand-900">
           Dashboard
@@ -20,23 +45,21 @@ export default function DashboardPage() {
         </p>
       </div>
 
-      {/* Stats */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {stats.map((stat) => (
+        {statConfig.map((stat) => (
           <Link
-            key={stat.label}
+            key={stat.key}
             href={stat.href}
             className="group rounded-xl border border-neutral-200 bg-white p-5 transition-all hover:border-brand-200 hover:shadow-sm"
           >
             <p className="text-sm font-medium text-neutral-500">{stat.label}</p>
             <p className={`mt-2 font-display text-3xl font-bold ${stat.color}`}>
-              {stat.value}
+              {metrics[stat.key]}
             </p>
           </Link>
         ))}
       </div>
 
-      {/* Próximos passos */}
       <section className="rounded-xl border border-neutral-200 bg-white p-6">
         <h2 className="font-display text-lg font-semibold text-brand-800">
           Primeiros Passos

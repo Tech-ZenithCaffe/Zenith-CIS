@@ -11,13 +11,19 @@ export async function createServerSupabaseClient() {
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
-        getAll() {
+        async getAll() {
           return cookieStore.getAll();
         },
-        setAll(cookiesToSet: { name: string; value: string; options: CookieOptions }[]) {
-          cookiesToSet.forEach(({ name, value, options }) => {
-            cookieStore.set(name, value, options);
-          });
+        async setAll(cookiesToSet: { name: string; value: string; options: CookieOptions }[]) {
+          try {
+            for (const { name, value, options } of cookiesToSet) {
+              cookieStore.set(name, value, options);
+            }
+          } catch {
+            // Chamado a partir de um Server Component.
+            // Pode ser ignorado porque o middleware trata
+            // de atualizar as sessões dos utilizadores.
+          }
         },
       },
     },
