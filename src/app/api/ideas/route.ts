@@ -37,13 +37,18 @@ export async function POST(request: Request) {
       );
     }
 
-    const { data: profile } = await supabase
+    const profileResult = await supabase
       .from("profiles")
       .select("market")
       .eq("id", user.id)
-      .single() as unknown as { data: { market: string } | null };
+      .single();
 
-    const market = (profile?.market ?? parsed.market) as "portugal" | "spain";
+    if (profileResult.error) {
+      console.error("[API] Erro ao buscar perfil:", profileResult.error);
+    }
+
+    const profileData = profileResult.data as { market: string } | null;
+    const market = (profileData?.market ?? parsed.market) as "portugal" | "spain";
 
     const agent = new IdeatorAgent();
     const output = await agent.execute(parsed);
@@ -70,7 +75,7 @@ export async function POST(request: Request) {
     if (error) {
       console.error("[API] Erro ao salvar ideias:", error);
       return NextResponse.json(
-        { status: "error", message: "Erro ao salvar ideias" },
+        { status: "error", message: "Erro ao salvar ideias", detail: error.message },
         { status: 500 },
       );
     }
@@ -84,9 +89,10 @@ export async function POST(request: Request) {
       { status: 201 },
     );
   } catch (error) {
-    console.error("[API] Erro ao gerar ideias:", error);
+    const message = error instanceof Error ? error.message : "Erro desconhecido";
+    console.error("[API] Erro ao gerar ideias:", message);
     return NextResponse.json(
-      { status: "error", message: "Erro ao processar pedido" },
+      { status: "error", message: "Erro ao processar pedido", detail: message },
       { status: 500 },
     );
   }
