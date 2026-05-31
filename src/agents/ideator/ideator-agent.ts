@@ -152,6 +152,23 @@ export class IdeatorAgent extends BaseAgent<IdeatorInput, IdeatorOutput> {
     const moodKey = input.mood;
     const brandSeeds: Concept[] = seeds[moodKey] ?? seeds.inspirador ?? [];
 
+    const extraNotes = [
+      input.competitorReference && `Referência: ${input.competitorReference}`,
+      input.additionalNotes && `Notas: ${input.additionalNotes}`,
+    ]
+      .filter(Boolean)
+      .join(" | ");
+
+    const formatPool: Array<"stories" | "reels" | "carousel"> = ["stories", "reels", "carousel"];
+    const goalPool: Array<"followers_growth" | "engagement" | "organic_reach"> = [
+      "followers_growth",
+      "engagement",
+      "organic_reach",
+    ];
+
+    const preferredFormat = input.format;
+    const preferredGoal = input.businessGoal;
+
     const usedFormats = new Set<string>();
     const usedGoals = new Set<string>();
     const usedConceptIdxs = new Set<number>();
@@ -171,28 +188,39 @@ export class IdeatorAgent extends BaseAgent<IdeatorInput, IdeatorOutput> {
       };
       usedConceptIdxs.add(seed?.idx ?? -1);
 
-      const formatPool: Array<"stories" | "reels" | "carousel"> = ["stories", "reels", "carousel"];
-      const goalPool: Array<"followers_growth" | "engagement" | "organic_reach"> = [
-        "followers_growth",
-        "engagement",
-        "organic_reach",
-      ];
-
-      const availableFormats = formatPool.filter((f) => !usedFormats.has(f));
-      const format = (availableFormats.length > 0
-        ? availableFormats[Math.floor(Math.random() * availableFormats.length)]
-        : formatPool[Math.floor(Math.random() * formatPool.length)])!;
+      let format: "stories" | "reels" | "carousel";
+      if (preferredFormat && i === 0) {
+        format = preferredFormat;
+      } else {
+        const available = formatPool.filter((f) => !usedFormats.has(f));
+        format = (available.length > 0
+          ? available[Math.floor(Math.random() * available.length)]
+          : formatPool[Math.floor(Math.random() * formatPool.length)])!;
+      }
       usedFormats.add(format);
 
-      const availableGoals = goalPool.filter((g) => !usedGoals.has(g));
-      const goal = (availableGoals.length > 0
-        ? availableGoals[Math.floor(Math.random() * availableGoals.length)]
-        : goalPool[Math.floor(Math.random() * goalPool.length)])!;
+      let goal: "followers_growth" | "engagement" | "organic_reach";
+      if (preferredGoal && i === 0) {
+        goal = preferredGoal;
+      } else {
+        const available = goalPool.filter((g) => !usedGoals.has(g));
+        goal = (available.length > 0
+          ? available[Math.floor(Math.random() * available.length)]
+          : goalPool[Math.floor(Math.random() * goalPool.length)])!;
+      }
       usedGoals.add(goal);
+
+      let description = concept.description;
+      if (extraNotes) {
+        description += `\n📌 ${extraNotes}`;
+      }
+      if (preferredFormat && format !== preferredFormat) {
+        description += `\n💡 Sugestão: se preferires ${preferredFormat}, podemos adaptar este conceito.`;
+      }
 
       ideas.push({
         title: concept.title,
-        conceptDescription: concept.description,
+        conceptDescription: description,
         format,
         businessGoal: goal,
       });
