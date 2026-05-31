@@ -81,6 +81,60 @@ function IdeaCard({ idea, onApprove, onReject, approving }: IdeaCardProps) {
   );
 }
 
+function RejectModal({
+  ideaId,
+  onClose,
+  onConfirm,
+}: {
+  ideaId: string;
+  onClose: () => void;
+  onConfirm: (_ideaId: string, _reason: string) => Promise<void>;
+}) {
+  const [reason, setReason] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+      <div className="mx-4 w-full max-w-md rounded-xl bg-white p-6 shadow-xl">
+        <h3 className="font-display text-lg font-bold text-brand-900">
+          Rejeitar Ideia
+        </h3>
+        <p className="mt-1 text-sm text-neutral-500">
+          Explica porque rejeitaste esta ideia — o teu feedback vai ajudar a IA
+          a gerar ideias melhores no futuro.
+        </p>
+        <textarea
+          value={reason}
+          onChange={(e) => setReason(e.target.value)}
+          placeholder="Ex: O formato carrossel não funciona para este público..."
+          rows={4}
+          className="mt-4 w-full resize-none rounded-lg border border-neutral-300 p-3 text-sm outline-none transition-colors focus:border-brand-500 focus:ring-1 focus:ring-brand-500"
+        />
+        <div className="mt-4 flex justify-end gap-3">
+          <button
+            onClick={onClose}
+            disabled={submitting}
+            className="rounded-lg border border-neutral-300 px-4 py-2 text-sm font-medium text-neutral-600 transition-colors hover:bg-neutral-100 disabled:opacity-50"
+          >
+            Cancelar
+          </button>
+          <button
+            onClick={() => {
+              if (!reason.trim()) return;
+              setSubmitting(true);
+              onConfirm(ideaId, reason.trim()).finally(() => setSubmitting(false));
+            }}
+            disabled={submitting || !reason.trim()}
+            className="rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {submitting ? "A rejeitar..." : "Rejeitar"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function EmptyState() {
   return (
     <div className="flex flex-col items-center justify-center rounded-xl border-2 border-dashed border-neutral-200 py-20 text-center">
@@ -184,6 +238,7 @@ export default function IdeasPage() {
   const [loading, setLoading] = useState(true);
   const [approvingId, setApprovingId] = useState<string | null>(null);
   const [approveState, setApproveState] = useState<ApproveState | null>(null);
+  const [rejectingId, setRejectingId] = useState<string | null>(null);
 
   useEffect(() => {
     fetch("/api/ideas")
@@ -197,13 +252,20 @@ export default function IdeasPage() {
       .finally(() => setLoading(false));
   }, []);
 
-  const handleReject = useCallback(async (ideaId: string) => {
-    setIdeas((prev) => prev.filter((i) => i.id !== ideaId));
-    await fetch("/api/ideas", {
-      method: "DELETE",
+  const handleReject = useCallback((ideaId: string) => {
+    setRejectingId(ideaId);
+  }, []);
+
+  const confirmReject = useCallback(async (ideaId: string, reason: string) => {
+    const res = await fetch("/api/ideas/reject", {
+      method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ idea_id: ideaId }),
-    }).catch(console.error);
+      body: JSON.stringify({ idea_id: ideaId, reason }),
+    });
+    if (res.ok) {
+      setIdeas((prev) => prev.filter((i) => i.id !== ideaId));
+    }
+    setRejectingId(null);
   }, []);
 
   const handleApprove = useCallback(async (ideaId: string) => {
@@ -319,6 +381,14 @@ export default function IdeasPage() {
 
       {approveState && (
         <ApproveProgress state={approveState} />
+      )}
+
+      {rejectingId && (
+        <RejectModal
+          ideaId={rejectingId}
+          onClose={() => setRejectingId(null)}
+          onConfirm={confirmReject}
+        />
       )}
     </div>
   );

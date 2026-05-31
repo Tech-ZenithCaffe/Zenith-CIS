@@ -86,10 +86,28 @@ export async function POST(request: Request) {
     const profileData = profileResult.data as { market: string } | null;
     const market = (profileData?.market ?? parsed.market) as "portugal" | "spain";
 
-    const agent = new IdeatorAgent();
-    const output = await agent.execute(parsed);
-
     const admin = createAdminClient();
+    const { data: feedbackRows } = await (admin as any)
+      .from("idea_feedback")
+      .select("idea_title, idea_description, format, business_goal, market, mood, target_audience, rejection_reason")
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: false })
+      .limit(10);
+
+    const rejectionFeedback = (feedbackRows ?? []).map((r: any) => ({
+      ideaTitle: r.idea_title,
+      ideaDescription: r.idea_description,
+      format: r.format,
+      businessGoal: r.business_goal,
+      market: r.market,
+      mood: r.mood,
+      targetAudience: r.target_audience,
+      rejectionReason: r.rejection_reason,
+    }));
+
+    const agent = new IdeatorAgent();
+    const output = await agent.execute({ ...parsed, rejectionFeedback });
+
     const rows = output.ideas.map((idea) => ({
       idea_title: idea.title,
       idea_description: idea.conceptDescription,

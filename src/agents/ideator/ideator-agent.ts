@@ -5,6 +5,7 @@ import {
   IdeatorInputSchema,
   IdeatorOutputSchema,
 } from "./types";
+import type { RejectionFeedback } from "./types";
 
 /**
  * Agente A: Ideator
@@ -60,6 +61,22 @@ export class IdeatorAgent extends BaseAgent<IdeatorInput, IdeatorOutput> {
   async execute(input: IdeatorInput): Promise<IdeatorOutput> {
     const validated = IdeatorInputSchema.parse(input);
 
+    const feedbackLines = (validated.rejectionFeedback ?? []).map(
+      (f: RejectionFeedback) =>
+        `- Ideia rejeitada: "${f.ideaTitle}" (${f.format}, ${f.businessGoal}) — Motivo: ${f.rejectionReason}`,
+    );
+
+    const feedbackBlock =
+      feedbackLines.length > 0
+        ? [
+            ``,
+            `## Feedback de Rejeições Anteriores`,
+            `As seguintes ideias foram rejeitadas pelo utilizador em gerações anteriores.`,
+            `Analisa os padrões e EVITA criar ideias semelhantes:`,
+            ...feedbackLines,
+          ].join("\n")
+        : "";
+
     const prompt = [
       `## Briefing de Conteúdo`,
       `**Mood/Atmosfera**: ${validated.mood}`,
@@ -73,6 +90,7 @@ export class IdeatorAgent extends BaseAgent<IdeatorInput, IdeatorOutput> {
         `**Referência de concorrência**: ${validated.competitorReference}`,
       validated.additionalNotes &&
         `**Notas adicionais**: ${validated.additionalNotes}`,
+      feedbackBlock,
     ]
       .filter(Boolean)
       .join("\n");
