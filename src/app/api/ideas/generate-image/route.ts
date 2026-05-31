@@ -66,18 +66,33 @@ Requirements:
 - Include readable typography (title as text)
 - Use shapes, gradients, icons, or illustrations
 - Aspect ratio: ${formatDesc}
-- Return ONLY valid SVG code inside \`\`\`svg...\`\`\` — no explanations`;
+- Return ONLY valid SVG code. No explanations. Wrap in \`\`\`svg...\`\`\``;
 
-    const svgRaw = await generateGeminiContent(
-      "You are a professional graphic designer specialized in social media visuals. Generate high-quality SVG images only.",
-      svgPrompt,
-    );
+    let svgRaw;
+    try {
+      svgRaw = await generateGeminiContent(
+        "You are a professional graphic designer specialized in social media visuals. Generate high-quality SVG images only.",
+        svgPrompt,
+      );
+    } catch (geminiErr) {
+      throw new Error(
+        `Gemini API error: ${geminiErr instanceof Error ? geminiErr.message : String(geminiErr)}`,
+      );
+    }
 
-    const svgMatch = svgRaw.match(/```svg\s*([\s\S]*?)```/);
+    if (!svgRaw || svgRaw.trim().length === 0) {
+      throw new Error("Gemini devolveu resposta vazia");
+    }
+
+    const svgMatch =
+      svgRaw.match(/```(?:svg|html)\s*([\s\S]*?)```/) ||
+      svgRaw.match(/```([\s\S]*?)```/);
     const svgCode = svgMatch?.[1]?.trim() || svgRaw.trim();
 
-    if (!svgCode.startsWith("<svg")) {
-      throw new Error("Gemini não gerou SVG válido");
+    if (!svgCode.startsWith("<svg") && !svgCode.startsWith("<?xml")) {
+      throw new Error(
+        `Gemini não gerou SVG válido. Resposta: ${svgRaw.slice(0, 200)}`,
+      );
     }
 
     const fileName = `idea-${idea_id}.svg`;
@@ -127,8 +142,10 @@ Requirements:
     return NextResponse.json({ status: "success", image_url: imageUrl });
   } catch (error) {
     const message =
-      error instanceof Error ? error.message : "Erro ao processar pedido";
-    console.error("[generate-image] Erro:", message);
+      error instanceof Error
+        ? `${error.name}: ${error.message}`
+        : `Erro desconhecido: ${JSON.stringify(error)}`;
+    console.error("[generate-image] Erro:", error);
     return NextResponse.json(
       { status: "error", message },
       { status: 500 },
