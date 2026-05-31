@@ -313,6 +313,7 @@ export default function IdeasPage() {
     if (res.ok) {
       setIdeas((prev) => prev.filter((i) => i.id !== ideaId));
     }
+    setSelectedIdea(null);
     setRejectingId(null);
   }, []);
 
@@ -401,7 +402,7 @@ export default function IdeasPage() {
         </div>
         <div className="flex gap-2">
           <Link
-            href="/settings"
+            href="/rejected"
             className="rounded-lg border border-neutral-300 px-4 py-2 text-sm font-medium text-neutral-600 transition-colors hover:bg-neutral-100"
           >
             Rejeitadas

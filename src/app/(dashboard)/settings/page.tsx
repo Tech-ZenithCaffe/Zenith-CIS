@@ -2,12 +2,6 @@
 
 import { useEffect, useState } from "react";
 
-const formatLabels: Record<string, string> = {
-  stories: "Stories",
-  reels: "Reels",
-  carousel: "Carrossel",
-};
-
 export default function SettingsPage() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -16,14 +10,6 @@ export default function SettingsPage() {
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
   const [loading, setLoading] = useState(true);
-  const [feedbackList, setFeedbackList] = useState<Array<{
-    id: string;
-    idea_title: string;
-    rejection_reason: string;
-    format: string;
-    created_at: string;
-  }>>([]);
-  const [feedbackLoading, setFeedbackLoading] = useState(true);
   const [confirmAction, setConfirmAction] = useState<string | null>(null);
   const [confirmText, setConfirmText] = useState("");
   const [clearing, setClearing] = useState<string | null>(null);
@@ -43,23 +29,6 @@ export default function SettingsPage() {
       .finally(() => setLoading(false));
   }, []);
 
-  useEffect(() => {
-    fetch("/api/ideas/feedback")
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.status === "success") {
-          setFeedbackList(data.feedback);
-        }
-      })
-      .catch(console.error)
-      .finally(() => setFeedbackLoading(false));
-  }, []);
-
-  async function deleteFeedback(id: string) {
-    await fetch(`/api/ideas/feedback?id=${id}`, { method: "DELETE" });
-    setFeedbackList((prev) => prev.filter((f) => f.id !== id));
-  }
-
   async function executeClear(action: string) {
     setClearing(action);
     try {
@@ -68,7 +37,6 @@ export default function SettingsPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ action }),
       });
-      if (action === "feedback") setFeedbackList([]);
     } catch {
       // ignore
     } finally {
@@ -213,42 +181,6 @@ export default function SettingsPage() {
               Lembretes de conteúdo por publicar
             </span>
           </label>
-        </div>
-      </section>
-
-      <section className="rounded-xl border border-neutral-200 bg-white p-6">
-        <h2 className="font-display text-lg font-semibold text-brand-800">
-          Ideias Rejeitadas
-        </h2>
-        <p className="mt-1 text-sm text-neutral-500">
-          Histórico de feedbacks que deste às ideias. Podes apagar registos individualmente.
-        </p>
-        <div className="mt-4 space-y-3">
-          {feedbackLoading ? (
-            <div className="flex items-center justify-center py-8">
-              <div className="h-6 w-6 animate-spin rounded-full border-4 border-neutral-200 border-t-brand-600" />
-            </div>
-          ) : feedbackList.length === 0 ? (
-            <p className="py-4 text-center text-sm text-neutral-400">Nenhum feedback registado.</p>
-          ) : (
-            feedbackList.map((fb) => (
-              <div key={fb.id} className="flex items-start justify-between rounded-lg border border-neutral-100 bg-neutral-50 p-3">
-                <div className="min-w-0 flex-1">
-                  <p className="text-sm font-medium text-neutral-800">{fb.idea_title}</p>
-                  <p className="mt-0.5 text-xs text-neutral-500">{fb.rejection_reason}</p>
-                  <p className="mt-0.5 text-xs text-neutral-400">
-                    {fb.format && formatLabels[fb.format]} · {new Date(fb.created_at).toLocaleDateString("pt-PT")}
-                  </p>
-                </div>
-                <button
-                  onClick={() => deleteFeedback(fb.id)}
-                  className="ml-2 shrink-0 rounded px-2 py-1 text-xs font-medium text-red-600 hover:bg-red-50"
-                >
-                  Apagar
-                </button>
-              </div>
-            ))
-          )}
         </div>
       </section>
 
