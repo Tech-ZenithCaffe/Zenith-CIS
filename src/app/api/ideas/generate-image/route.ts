@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
-import { generateGeminiContent } from "@/lib/gemini/client";
+import { generateSvg } from "@/lib/svg-template";
 
 export async function POST(request: Request) {
   try {
@@ -44,56 +44,13 @@ export async function POST(request: Request) {
       return NextResponse.json({ status: "success", image_url: idea.image_url });
     }
 
-    const formatMap: Record<string, string> = {
-      stories: "vertical 9:16",
-      reels: "vertical 9:16",
-      carousel: "horizontal 1:1 (slide thumbnail)",
-    };
-
-    const formatDesc = formatMap[idea.format as string] ?? "1:1";
-
-    const svgPrompt = `Generate a visually stunning SVG illustration for a social media post.
-
-Title: "${idea.idea_title}"
-Description: "${idea.idea_description || ""}"
-Format: ${formatDesc}
-Target audience: ${idea.target_audience || "general"}
-Mood: ${idea.mood || "professional"}
-
-Requirements:
-- Modern, clean, visually appealing design
-- Use a beautiful color palette appropriate for the mood
-- Include readable typography (title as text)
-- Use shapes, gradients, icons, or illustrations
-- Aspect ratio: ${formatDesc}
-- Return ONLY valid SVG code. No explanations. Wrap in \`\`\`svg...\`\`\``;
-
-    let svgRaw;
-    try {
-      svgRaw = await generateGeminiContent(
-        "You are a professional graphic designer specialized in social media visuals. Generate high-quality SVG images only.",
-        svgPrompt,
-      );
-    } catch (geminiErr) {
-      throw new Error(
-        `Gemini API error: ${geminiErr instanceof Error ? geminiErr.message : String(geminiErr)}`,
-      );
-    }
-
-    if (!svgRaw || svgRaw.trim().length === 0) {
-      throw new Error("Gemini devolveu resposta vazia");
-    }
-
-    const svgMatch =
-      svgRaw.match(/```(?:svg|html)\s*([\s\S]*?)```/) ||
-      svgRaw.match(/```([\s\S]*?)```/);
-    const svgCode = svgMatch?.[1]?.trim() || svgRaw.trim();
-
-    if (!svgCode.startsWith("<svg") && !svgCode.startsWith("<?xml")) {
-      throw new Error(
-        `Gemini não gerou SVG válido. Resposta: ${svgRaw.slice(0, 200)}`,
-      );
-    }
+    const svgCode = generateSvg({
+      title: idea.idea_title,
+      description: idea.idea_description,
+      format: idea.format,
+      targetAudience: idea.target_audience,
+      mood: idea.mood,
+    });
 
     const fileName = `idea-${idea_id}.svg`;
     const { error: uploadError } = await (admin as any).storage
