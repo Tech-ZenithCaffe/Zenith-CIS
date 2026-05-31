@@ -105,8 +105,33 @@ export async function POST(request: Request) {
       rejectionReason: r.rejection_reason,
     }));
 
+    const { data: briefingRows } = await (admin as any)
+      .from("briefings")
+      .select("title, content, type, file_url")
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: false })
+      .limit(20);
+
+    const briefingContext = (briefingRows ?? [])
+      .map((b: any) => {
+        if (b.type === "text") return `[Briefing: ${b.title}]\n${b.content}`;
+        if (b.type === "link") return `[Link: ${b.title}]\n${b.file_url || b.content}`;
+        if (b.type === "file") return `[Ficheiro: ${b.title}] ${b.file_url || ""}`;
+        return "";
+      })
+      .filter(Boolean)
+      .join("\n\n");
+
+    const combinedNotes = [
+      parsed.additionalNotes,
+      briefingContext ? `\n\n## Contexto do Negócio (Briefings)\n${briefingContext}` : "",
+    ]
+      .filter(Boolean)
+      .join("\n")
+      .trim() || undefined;
+
     const agent = new IdeatorAgent();
-    const output = await agent.execute({ ...parsed, rejectionFeedback });
+    const output = await agent.execute({ ...parsed, additionalNotes: combinedNotes, rejectionFeedback });
 
     const rows = output.ideas.map((idea) => ({
       idea_title: idea.title,

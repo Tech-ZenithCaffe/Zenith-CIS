@@ -6,6 +6,19 @@ export type ContentFormat = "stories" | "reels" | "carousel";
 export type ContentStatus = "draft" | "scheduled" | "published";
 export type BusinessGoal = "followers_growth" | "engagement" | "organic_reach";
 
+export interface Briefing {
+  id: string;
+  user_id: string;
+  title: string;
+  content: string | null;
+  type: "text" | "file" | "link";
+  file_url: string | null;
+  file_type: string | null;
+  file_size: number | null;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface Database {
   public: {
     Tables: {
@@ -18,6 +31,11 @@ export interface Database {
         Row: ContentPackage;
         Insert: Omit<ContentPackage, "id" | "created_at" | "updated_at">;
         Update: Partial<Omit<ContentPackage, "id" | "created_at">>;
+      };
+      briefings: {
+        Row: Briefing;
+        Insert: Omit<Briefing, "id" | "created_at" | "updated_at">;
+        Update: Partial<Omit<Briefing, "id" | "created_at" | "updated_at">>;
       };
     };
     Views: Record<string, never>;

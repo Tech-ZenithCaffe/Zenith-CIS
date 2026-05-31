@@ -47,6 +47,7 @@ export async function Header() {
         </Link>
         <nav className="flex items-center gap-6 text-sm font-medium text-neutral-600">
           <Link href="/ideas" className="transition-colors hover:text-brand-600">Ideias</Link>
+          <Link href="/briefings" className="transition-colors hover:text-brand-600">Briefings</Link>
           <Link href="/rejected" className="transition-colors hover:text-brand-600">Rejeitadas</Link>
           <Link href="/calendar" className="transition-colors hover:text-brand-600">Calendário</Link>
           <Link href="/settings" className="transition-colors hover:text-brand-600">Definições</Link>
