@@ -53,6 +53,7 @@ function DayModal({
   onClose,
   onSchedule,
   onUnschedule,
+  onDelete,
 }: {
   year: number;
   month: number;
@@ -61,6 +62,7 @@ function DayModal({
   onClose: () => void;
   onSchedule: (pkgId: string, date: string) => void;
   onUnschedule: (pkgId: string) => void;
+  onDelete: (pkgId: string) => void;
 }) {
   const dayStr = dateStr(year, month, day);
   const isFuture = new Date(dayStr) >= new Date(getToday().year, getToday().month - 1, getToday().day);
@@ -91,12 +93,20 @@ function DayModal({
                     <p className="truncate text-sm font-medium text-amber-900">{pkg.idea_title}</p>
                     <span className="text-xs text-amber-700">{formatLabels[pkg.format] ?? pkg.format}</span>
                   </div>
-                  <button
-                    onClick={() => onUnschedule(pkg.id)}
-                    className="ml-2 shrink-0 rounded px-2 py-1 text-xs font-medium text-red-600 hover:bg-red-50"
-                  >
-                    Remover
-                  </button>
+                  <div className="flex shrink-0 gap-1">
+                    <button
+                      onClick={() => onUnschedule(pkg.id)}
+                      className="rounded px-2 py-1 text-xs font-medium text-amber-700 hover:bg-amber-100"
+                    >
+                      Remover
+                    </button>
+                    <button
+                      onClick={() => onDelete(pkg.id)}
+                      className="rounded px-2 py-1 text-xs font-medium text-red-600 hover:bg-red-50"
+                    >
+                      Apagar
+                    </button>
+                  </div>
                 </div>
               ))}
             </div>
@@ -113,12 +123,20 @@ function DayModal({
                     <p className="truncate text-sm font-medium text-neutral-800">{pkg.idea_title}</p>
                     <span className="text-xs text-neutral-500">{formatLabels[pkg.format] ?? pkg.format}</span>
                   </div>
-                  <button
-                    onClick={() => onSchedule(pkg.id, dayStr)}
-                    className="ml-2 shrink-0 rounded bg-brand-600 px-2.5 py-1 text-xs font-medium text-white hover:bg-brand-700"
-                  >
-                    Agendar
-                  </button>
+                  <div className="flex shrink-0 gap-1">
+                    <button
+                      onClick={() => onSchedule(pkg.id, dayStr)}
+                      className="rounded bg-brand-600 px-2.5 py-1 text-xs font-medium text-white hover:bg-brand-700"
+                    >
+                      Agendar
+                    </button>
+                    <button
+                      onClick={() => onDelete(pkg.id)}
+                      className="rounded px-2 py-1 text-xs font-medium text-red-600 hover:bg-red-50"
+                    >
+                      Apagar
+                    </button>
+                  </div>
                 </div>
               ))}
             </div>
@@ -175,6 +193,11 @@ export default function CalendarPage() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ package_id: pkgId, scheduled_date: null }),
     });
+    fetchPackages();
+  }
+
+  async function handleDelete(pkgId: string) {
+    await fetch(`/api/calendar?id=${pkgId}`, { method: "DELETE" });
     fetchPackages();
   }
 
@@ -295,6 +318,7 @@ export default function CalendarPage() {
           onClose={() => setSelectedDay(null)}
           onSchedule={handleSchedule}
           onUnschedule={handleUnschedule}
+          onDelete={handleDelete}
         />
       )}
     </div>

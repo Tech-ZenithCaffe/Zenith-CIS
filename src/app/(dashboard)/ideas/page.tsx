@@ -399,12 +399,20 @@ export default function IdeasPage() {
             Gere e aprova conceitos de conteúdo para o teu mercado
           </p>
         </div>
-        <Link
-          href="/ideas/new"
-          className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-brand-700"
-        >
-          + Nova Ideia
-        </Link>
+        <div className="flex gap-2">
+          <Link
+            href="/settings"
+            className="rounded-lg border border-neutral-300 px-4 py-2 text-sm font-medium text-neutral-600 transition-colors hover:bg-neutral-100"
+          >
+            Rejeitadas
+          </Link>
+          <Link
+            href="/ideas/new"
+            className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-brand-700"
+          >
+            + Nova Ideia
+          </Link>
+        </div>
       </div>
 
       {loading ? (

@@ -48,6 +48,7 @@ export async function Header() {
         <nav className="flex items-center gap-6 text-sm font-medium text-neutral-600">
           <Link href="/ideas" className="transition-colors hover:text-brand-600">Ideias</Link>
           <Link href="/calendar" className="transition-colors hover:text-brand-600">Calendário</Link>
+          <Link href="/settings" className="transition-colors hover:text-brand-600">Definições</Link>
 {authUser ? (
              <AuthButton user={{ id: authUser.id, email: authUser.email, name: authUser.name, role: authUser.role, market: authUser.market, avatarUrl: authUser.avatarUrl }} />
            ) : (

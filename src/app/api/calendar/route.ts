@@ -40,6 +40,42 @@ export async function GET(request: Request) {
   }
 }
 
+export async function DELETE(request: Request) {
+  try {
+    const supabase = await createServerSupabaseClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      return NextResponse.json({ status: "error", message: "Não autenticado" }, { status: 401 });
+    }
+
+    const { searchParams } = new URL(request.url);
+    const id = searchParams.get("id");
+
+    if (!id) {
+      return NextResponse.json({ status: "error", message: "ID é obrigatório" }, { status: 400 });
+    }
+
+    const admin = createAdminClient();
+    const { error } = await (admin as any)
+      .from("content_packages")
+      .delete()
+      .eq("id", id);
+
+    if (error) {
+      console.error("[API] Erro ao apagar pacote:", error);
+      return NextResponse.json({ status: "error", message: "Erro ao apagar" }, { status: 500 });
+    }
+
+    return NextResponse.json({ status: "success", message: "Conteúdo apagado" });
+  } catch (error) {
+    console.error("[API] Erro ao apagar:", error);
+    return NextResponse.json({ status: "error", message: "Erro interno" }, { status: 500 });
+  }
+}
+
 export async function PUT(request: Request) {
   try {
     const supabase = await createServerSupabaseClient();
