@@ -2,6 +2,9 @@ import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 
+const HF_API_URL =
+  "https://api-inference.huggingface.co/models/black-forest-labs/FLUX.1-schnell";
+
 export async function POST(request: Request) {
   try {
     const { idea_id } = await request.json();
@@ -43,80 +46,52 @@ export async function POST(request: Request) {
       return NextResponse.json({ status: "success", image_url: idea.image_url });
     }
 
-    const formatMap: Record<string, string> = {
-      stories: "Instagram Stories (vertical 9:16)",
-      reels: "Instagram Reels (vertical 9:16, vídeo)",
-      carousel: "Carrossel (vários slides)",
-    };
-
-    const prompt = `Generate a photorealistic image for a social media content idea with these characteristics:
-- Title: ${idea.idea_title}
-- Concept: ${idea.idea_description}
-- Format: ${formatMap[idea.format] ?? idea.format}
-- Target audience: ${idea.target_audience ?? "general"}
-- Mood/theme: ${idea.mood ?? "professional"}
-- Business goal: ${idea.business_goal}
-
-Generate a high-quality, visually appealing image that represents this content idea. The image should be suitable for social media, with good lighting, composition, and professional quality. Return ONLY the image.`;
-
-    const apiKey = process.env.GEMINI_API_KEY;
-    if (!apiKey) {
+    const hfToken = process.env.HUGGINGFACE_API_KEY;
+    if (!hfToken) {
       return NextResponse.json(
-        { status: "error", message: "GEMINI_API_KEY não configurada" },
+        {
+          status: "error",
+          message:
+            "HUGGINGFACE_API_KEY não configurada. Cria uma conta gratuita em huggingface.co e gera um token em huggingface.co/settings/tokens.",
+        },
         { status: 500 },
       );
     }
 
-    const geminiRes = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${apiKey}`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: prompt }] }],
-          generationConfig: {
-            responseModalities: ["Text", "Image"],
-          },
-        }),
-      },
-    );
+    const formatMap: Record<string, string> = {
+      stories: "Instagram Stories, vertical 9:16",
+      reels: "Instagram Reels, vertical 9:16",
+      carousel: "Carrossel Instagram, múltiplos slides",
+    };
 
-    if (!geminiRes.ok) {
-      const errText = await geminiRes.text();
-      console.error("[generate-image] Gemini error:", errText);
+    const prompt = `Social media content visual: ${idea.idea_title}. ${idea.idea_description}. Format: ${formatMap[idea.format] ?? idea.format}. Target: ${idea.target_audience ?? "general audience"}. Mood: ${idea.mood ?? "professional"}. Photorealistic, high quality, well composed.`;
+
+    const hfRes = await fetch(HF_API_URL, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${hfToken}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ inputs: prompt }),
+    });
+
+    if (!hfRes.ok) {
+      const errText = await hfRes.text();
+      console.error("[generate-image] Hugging Face error:", hfRes.status, errText);
       return NextResponse.json(
         { status: "error", message: "Erro ao gerar imagem com IA" },
         { status: 500 },
       );
     }
 
-    const geminiData = await geminiRes.json();
-
-    let imageData: string | null = null;
-    let mimeType = "image/png";
-
-    for (const part of geminiData?.candidates?.[0]?.content?.parts ?? []) {
-      if (part.inlineData) {
-        imageData = part.inlineData.data;
-        mimeType = part.inlineData.mimeType ?? "image/png";
-        break;
-      }
-    }
-
-    if (!imageData) {
-      return NextResponse.json(
-        { status: "error", message: "Gemini não devolveu uma imagem" },
-        { status: 500 },
-      );
-    }
-
-    const buffer = Buffer.from(imageData, "base64");
-    const fileName = `idea-${idea_id}.${mimeType.split("/")[1] ?? "png"}`;
+    const arrayBuffer = await hfRes.arrayBuffer();
+    const buffer = Buffer.from(arrayBuffer);
+    const fileName = `idea-${idea_id}.png`;
 
     const { data: uploadData, error: uploadError } = await (admin as any).storage
       .from("idea-images")
       .upload(fileName, buffer, {
-        contentType: mimeType,
+        contentType: "image/png",
         upsert: true,
       });
 
@@ -131,7 +106,7 @@ Generate a high-quality, visually appealing image that represents this content i
         const { data: retryData, error: retryError } = await (admin as any).storage
           .from("idea-images")
           .upload(fileName, buffer, {
-            contentType: mimeType,
+            contentType: "image/png",
             upsert: true,
           });
 
@@ -155,7 +130,9 @@ Generate a high-quality, visually appealing image that represents this content i
       .from("idea-images")
       .getPublicUrl(fileName);
 
-    const imageUrl = urlData?.publicUrl ?? `https://${process.env.NEXT_PUBLIC_SUPABASE_URL!.replace("https://", "")}/storage/v1/object/public/idea-images/${fileName}`;
+    const imageUrl =
+      urlData?.publicUrl ??
+      `https://${process.env.NEXT_PUBLIC_SUPABASE_URL!.replace("https://", "")}/storage/v1/object/public/idea-images/${fileName}`;
 
     await (admin as any)
       .from("content_packages")

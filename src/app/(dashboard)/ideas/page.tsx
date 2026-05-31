@@ -131,6 +131,7 @@ function IdeaDetailModal({
 }) {
   const [imageUrl, setImageUrl] = useState<string | null>(idea.image_url);
   const [generatingImage, setGeneratingImage] = useState(false);
+  const [imageError, setImageError] = useState<string | null>(null);
 
   useEffect(() => {
     if (idea.image_url) {
@@ -140,6 +141,7 @@ function IdeaDetailModal({
     if (generatingImage) return;
 
     setGeneratingImage(true);
+    setImageError(null);
     fetch("/api/ideas/generate-image", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -149,9 +151,11 @@ function IdeaDetailModal({
       .then((data) => {
         if (data.status === "success") {
           setImageUrl(data.image_url);
+        } else {
+          setImageError(data.message ?? "Erro ao gerar imagem");
         }
       })
-      .catch(console.error)
+      .catch(() => setImageError("Erro de rede ao gerar imagem"))
       .finally(() => setGeneratingImage(false));
   }, [idea.id, idea.image_url]);
 
@@ -194,6 +198,10 @@ function IdeaDetailModal({
                 className="w-full rounded-lg border border-neutral-200 object-cover"
                 style={{ aspectRatio: "16/9" }}
               />
+            ) : imageError ? (
+              <div className="flex aspect-video items-center justify-center rounded-lg bg-amber-50 px-4">
+                <p className="text-center text-xs text-amber-700">{imageError}</p>
+              </div>
             ) : (
               <div className="flex aspect-video items-center justify-center rounded-lg bg-neutral-50">
                 <span className="text-xs text-neutral-400">Imagem indisponível</span>

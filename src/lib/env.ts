@@ -14,6 +14,9 @@ const envSchema = z.object({
   // Gemini
   GEMINI_API_KEY: z.string().min(1),
 
+  // Hugging Face (opcional — para geração de imagens)
+  HUGGINGFACE_API_KEY: z.string().optional(),
+
   // Vercel Cron (opcional em dev)
   VERCEL_CRON_SECRET: z.string().optional(),
 });
