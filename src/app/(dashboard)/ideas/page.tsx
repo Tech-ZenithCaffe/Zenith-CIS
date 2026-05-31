@@ -26,17 +26,14 @@ interface ApproveState {
 
 interface IdeaCardProps {
   idea: ContentIdea;
-  onApprove: (_ideaId: string) => Promise<void>;
-  onReject: (_ideaId: string) => void;
-  approving: boolean;
+  onClick: () => void;
 }
 
-function IdeaCard({ idea, onApprove, onReject, approving }: IdeaCardProps) {
+function IdeaCard({ idea, onClick }: IdeaCardProps) {
   return (
-    <div
-      className={`rounded-xl border bg-white p-5 transition-shadow hover:shadow-sm ${
-        approving ? "border-brand-300" : "border-neutral-200"
-      }`}
+    <button
+      onClick={onClick}
+      className="w-full rounded-xl border border-neutral-200 bg-white p-5 text-left transition-shadow hover:shadow-sm"
     >
       <div className="flex items-start justify-between gap-4">
         <div className="min-w-0 flex-1">
@@ -60,24 +57,8 @@ function IdeaCard({ idea, onApprove, onReject, approving }: IdeaCardProps) {
         <span className="text-xs text-neutral-400">
           {new Date(idea.created_at).toLocaleDateString("pt-PT")}
         </span>
-        <div className="flex gap-2">
-          <button
-            onClick={() => onReject(idea.id)}
-            disabled={approving}
-            className="rounded-lg border border-neutral-300 px-3 py-1.5 text-xs font-medium text-neutral-600 transition-colors hover:bg-neutral-100 disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            Rejeitar
-          </button>
-          <button
-            onClick={() => onApprove(idea.id)}
-            disabled={approving}
-            className="rounded-lg bg-brand-600 px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-brand-700 disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            {approving ? "A processar..." : "Aprovar"}
-          </button>
-        </div>
       </div>
-    </div>
+    </button>
   );
 }
 
@@ -129,6 +110,72 @@ function RejectModal({
           >
             {submitting ? "A rejeitar..." : "Rejeitar"}
           </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function IdeaDetailModal({
+  idea,
+  onClose,
+  onApprove,
+  onReject,
+  approving,
+}: {
+  idea: ContentIdea;
+  onClose: () => void;
+  onApprove: (_ideaId: string) => Promise<void>;
+  onReject: (_ideaId: string) => void;
+  approving: boolean;
+}) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={onClose}>
+      <div className="mx-4 w-full max-w-lg rounded-xl bg-white p-6 shadow-xl" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-start justify-between gap-4">
+          <h3 className="font-display text-lg font-bold text-brand-900">
+            {idea.title}
+          </h3>
+          <button onClick={onClose} className="text-neutral-400 hover:text-neutral-600">
+            <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        <div className="mt-3 flex gap-2">
+          <span className="rounded-full bg-brand-50 px-2.5 py-0.5 text-xs font-medium text-brand-700">
+            {formatLabels[idea.format] ?? idea.format}
+          </span>
+          <span className="rounded-full bg-neutral-100 px-2.5 py-0.5 text-xs font-medium text-neutral-600">
+            {goalLabels[idea.businessGoal] ?? idea.businessGoal}
+          </span>
+        </div>
+
+        <p className="mt-4 whitespace-pre-wrap text-sm leading-relaxed text-neutral-700">
+          {idea.conceptDescription}
+        </p>
+
+        <div className="mt-6 flex items-center justify-between border-t border-neutral-100 pt-4">
+          <span className="text-xs text-neutral-400">
+            {new Date(idea.created_at).toLocaleDateString("pt-PT")}
+          </span>
+          <div className="flex gap-3">
+            <button
+              onClick={() => onReject(idea.id)}
+              disabled={approving}
+              className="rounded-lg border border-neutral-300 px-4 py-2 text-sm font-medium text-neutral-600 transition-colors hover:bg-neutral-100 disabled:opacity-50"
+            >
+              Rejeitar
+            </button>
+            <button
+              onClick={() => onApprove(idea.id)}
+              disabled={approving}
+              className="rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-brand-700 disabled:opacity-50"
+            >
+              {approving ? "A processar..." : "Aprovar"}
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -236,6 +283,7 @@ function ApproveProgress({ state }: { state: ApproveState }) {
 export default function IdeasPage() {
   const [ideas, setIdeas] = useState<ContentIdea[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedIdea, setSelectedIdea] = useState<ContentIdea | null>(null);
   const [approvingId, setApprovingId] = useState<string | null>(null);
   const [approveState, setApproveState] = useState<ApproveState | null>(null);
   const [rejectingId, setRejectingId] = useState<string | null>(null);
@@ -371,12 +419,20 @@ export default function IdeasPage() {
             <IdeaCard
               key={idea.id}
               idea={idea}
-              onApprove={handleApprove}
-              onReject={handleReject}
-              approving={approvingId === idea.id}
+              onClick={() => setSelectedIdea(idea)}
             />
           ))}
         </div>
+      )}
+
+      {selectedIdea && (
+        <IdeaDetailModal
+          idea={selectedIdea}
+          onClose={() => setSelectedIdea(null)}
+          onApprove={handleApprove}
+          onReject={handleReject}
+          approving={approvingId === selectedIdea.id}
+        />
       )}
 
       {approveState && (
