@@ -5,6 +5,42 @@ import { IdeasService } from "@/services/ideas-service";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 
+export async function DELETE(request: Request) {
+  try {
+    const { idea_id } = await request.json();
+
+    if (!idea_id) {
+      return NextResponse.json(
+        { status: "error", message: "ID da ideia é obrigatório" },
+        { status: 400 },
+      );
+    }
+
+    const admin = createAdminClient();
+    const { error } = await (admin as any)
+      .from("content_packages")
+      .delete()
+      .eq("id", idea_id);
+
+    if (error) {
+      console.error("[API] Erro ao rejeitar ideia:", error);
+      return NextResponse.json(
+        { status: "error", message: "Erro ao rejeitar ideia", detail: error.message },
+        { status: 500 },
+      );
+    }
+
+    return NextResponse.json({ status: "success", message: "Ideia rejeitada" });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Erro desconhecido";
+    console.error("[API] Erro ao rejeitar ideia:", message);
+    return NextResponse.json(
+      { status: "error", message: "Erro ao processar pedido", detail: message },
+      { status: 500 },
+    );
+  }
+}
+
 export async function GET() {
   try {
     const service = new IdeasService();

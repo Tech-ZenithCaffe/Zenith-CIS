@@ -27,10 +27,11 @@ interface ApproveState {
 interface IdeaCardProps {
   idea: ContentIdea;
   onApprove: (_ideaId: string) => Promise<void>;
+  onReject: (_ideaId: string) => void;
   approving: boolean;
 }
 
-function IdeaCard({ idea, onApprove, approving }: IdeaCardProps) {
+function IdeaCard({ idea, onApprove, onReject, approving }: IdeaCardProps) {
   return (
     <div
       className={`rounded-xl border bg-white p-5 transition-shadow hover:shadow-sm ${
@@ -59,13 +60,22 @@ function IdeaCard({ idea, onApprove, approving }: IdeaCardProps) {
         <span className="text-xs text-neutral-400">
           {new Date(idea.created_at).toLocaleDateString("pt-PT")}
         </span>
-        <button
-          onClick={() => onApprove(idea.id)}
-          disabled={approving}
-          className="rounded-lg bg-brand-600 px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-brand-700 disabled:cursor-not-allowed disabled:opacity-50"
-        >
-          {approving ? "A processar..." : "Aprovar"}
-        </button>
+        <div className="flex gap-2">
+          <button
+            onClick={() => onReject(idea.id)}
+            disabled={approving}
+            className="rounded-lg border border-neutral-300 px-3 py-1.5 text-xs font-medium text-neutral-600 transition-colors hover:bg-neutral-100 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            Rejeitar
+          </button>
+          <button
+            onClick={() => onApprove(idea.id)}
+            disabled={approving}
+            className="rounded-lg bg-brand-600 px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-brand-700 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {approving ? "A processar..." : "Aprovar"}
+          </button>
+        </div>
       </div>
     </div>
   );
@@ -187,6 +197,15 @@ export default function IdeasPage() {
       .finally(() => setLoading(false));
   }, []);
 
+  const handleReject = useCallback(async (ideaId: string) => {
+    setIdeas((prev) => prev.filter((i) => i.id !== ideaId));
+    await fetch("/api/ideas", {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ idea_id: ideaId }),
+    }).catch(console.error);
+  }, []);
+
   const handleApprove = useCallback(async (ideaId: string) => {
     setApprovingId(ideaId);
     setApproveState({ currentStep: "copywriting", doneSteps: new Set() });
@@ -291,6 +310,7 @@ export default function IdeasPage() {
               key={idea.id}
               idea={idea}
               onApprove={handleApprove}
+              onReject={handleReject}
               approving={approvingId === idea.id}
             />
           ))}
