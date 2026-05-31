@@ -77,6 +77,46 @@ export class IdeatorAgent extends BaseAgent<IdeatorInput, IdeatorOutput> {
       .filter(Boolean)
       .join("\n");
 
-    return this.generateValidated(prompt, IdeatorOutputSchema);
+    try {
+      return await this.generateValidated(prompt, IdeatorOutputSchema);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "";
+      if (message.includes("429") || message.includes("quota") || message.includes("RESOURCE_EXHAUSTED")) {
+        console.warn("[IdeatorAgent] Quota Gemini excedida — a usar fallback local");
+        return this.generateFallback(validated);
+      }
+      throw error;
+    }
+  }
+
+  private generateFallback(input: IdeatorInput): IdeatorOutput {
+    const market = input.market === "portugal" ? "Portugal" : "Espanha";
+    const moodLabels: Record<string, string> = {
+      inspirador: "Inspiração",
+      divertido: "Diversão",
+      elegante: "Elegância",
+      educativo: "Educação",
+      autêntico: "Autenticidade",
+      sazonal: "Sazonalidade",
+    };
+    const mood = moodLabels[input.mood] ?? input.mood;
+
+    const formats: Array<"stories" | "reels" | "carousel"> = ["stories", "reels", "carousel"];
+    const goals: Array<"followers_growth" | "engagement" | "organic_reach"> = [
+      "followers_growth",
+      "engagement",
+      "organic_reach",
+    ];
+    const shuffledFormats = [...formats].sort(() => Math.random() - 0.5);
+    const shuffledGoals = [...goals].sort(() => Math.random() - 0.5);
+
+    const ideas: IdeatorOutput["ideas"] = shuffledFormats.map((format, i) => ({
+      title: `${mood} em ${market} — Ideia ${i + 1}`,
+      conceptDescription: `Conteúdo focado em ${mood.toLowerCase()} para o público ${input.targetAudience} em ${market}.`,
+      format,
+      businessGoal: shuffledGoals[i] ?? "engagement",
+    }));
+
+    return { ideas };
   }
 }
