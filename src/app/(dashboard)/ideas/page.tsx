@@ -129,34 +129,84 @@ function IdeaDetailModal({
   onReject: (_ideaId: string) => void;
   approving: boolean;
 }) {
+  const [imageUrl, setImageUrl] = useState<string | null>(idea.image_url);
+  const [generatingImage, setGeneratingImage] = useState(false);
+
+  useEffect(() => {
+    if (idea.image_url) {
+      setImageUrl(idea.image_url);
+      return;
+    }
+    if (generatingImage) return;
+
+    setGeneratingImage(true);
+    fetch("/api/ideas/generate-image", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ idea_id: idea.id }),
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.status === "success") {
+          setImageUrl(data.image_url);
+        }
+      })
+      .catch(console.error)
+      .finally(() => setGeneratingImage(false));
+  }, [idea.id, idea.image_url]);
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={onClose}>
-      <div className="mx-4 w-full max-w-lg rounded-xl bg-white p-6 shadow-xl" onClick={(e) => e.stopPropagation()}>
-        <div className="flex items-start justify-between gap-4">
-          <h3 className="font-display text-lg font-bold text-brand-900">
-            {idea.title}
-          </h3>
-          <button onClick={onClose} className="text-neutral-400 hover:text-neutral-600">
-            <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
+      <div className="mx-4 flex w-full max-w-2xl flex-col rounded-xl bg-white shadow-xl" onClick={(e) => e.stopPropagation()}>
+        <div className="overflow-y-auto p-6">
+          <div className="flex items-start justify-between gap-4">
+            <h3 className="font-display text-lg font-bold text-brand-900">
+              {idea.title}
+            </h3>
+            <button onClick={onClose} className="text-neutral-400 hover:text-neutral-600">
+              <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+
+          <div className="mt-3 flex gap-2">
+            <span className="rounded-full bg-brand-50 px-2.5 py-0.5 text-xs font-medium text-brand-700">
+              {formatLabels[idea.format] ?? idea.format}
+            </span>
+            <span className="rounded-full bg-neutral-100 px-2.5 py-0.5 text-xs font-medium text-neutral-600">
+              {goalLabels[idea.businessGoal] ?? idea.businessGoal}
+            </span>
+          </div>
+
+          <div className="mt-4">
+            {generatingImage ? (
+              <div className="flex aspect-video items-center justify-center rounded-lg bg-neutral-100">
+                <div className="flex flex-col items-center gap-2">
+                  <div className="h-8 w-8 animate-spin rounded-full border-4 border-neutral-200 border-t-brand-600" />
+                  <span className="text-xs text-neutral-400">A gerar imagem...</span>
+                </div>
+              </div>
+            ) : imageUrl ? (
+              <img
+                src={imageUrl}
+                alt={idea.title}
+                className="w-full rounded-lg border border-neutral-200 object-cover"
+                style={{ aspectRatio: "16/9" }}
+              />
+            ) : (
+              <div className="flex aspect-video items-center justify-center rounded-lg bg-neutral-50">
+                <span className="text-xs text-neutral-400">Imagem indisponível</span>
+              </div>
+            )}
+          </div>
+
+          <p className="mt-4 whitespace-pre-wrap text-sm leading-relaxed text-neutral-700">
+            {idea.conceptDescription}
+          </p>
         </div>
 
-        <div className="mt-3 flex gap-2">
-          <span className="rounded-full bg-brand-50 px-2.5 py-0.5 text-xs font-medium text-brand-700">
-            {formatLabels[idea.format] ?? idea.format}
-          </span>
-          <span className="rounded-full bg-neutral-100 px-2.5 py-0.5 text-xs font-medium text-neutral-600">
-            {goalLabels[idea.businessGoal] ?? idea.businessGoal}
-          </span>
-        </div>
-
-        <p className="mt-4 whitespace-pre-wrap text-sm leading-relaxed text-neutral-700">
-          {idea.conceptDescription}
-        </p>
-
-        <div className="mt-6 flex items-center justify-between border-t border-neutral-100 pt-4">
+        <div className="flex items-center justify-between border-t border-neutral-100 px-6 py-4">
           <span className="text-xs text-neutral-400">
             {new Date(idea.created_at).toLocaleDateString("pt-PT")}
           </span>

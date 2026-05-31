@@ -57,6 +57,7 @@ export class IdeasService extends BaseService {
       mood: row.mood as ContentIdea["mood"],
       targetAudience: row.target_audience as ContentIdea["targetAudience"],
       is_saved: row.is_saved as boolean,
+      image_url: row.image_url as string | null,
       created_at: row.created_at as string,
     };
   }

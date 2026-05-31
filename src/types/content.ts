@@ -14,6 +14,7 @@ export interface ContentIdea {
   mood: string | null;
   targetAudience: string | null;
   is_saved: boolean;
+  image_url: string | null;
   created_at: string;
 }
 
