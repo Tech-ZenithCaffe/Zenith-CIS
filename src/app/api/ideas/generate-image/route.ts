@@ -1,9 +1,7 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
-
-const HF_API_URL =
-  "https://api-inference.huggingface.co/models/black-forest-labs/FLUX.1-schnell";
+import { generateGeminiContent } from "@/lib/gemini/client";
 
 export async function POST(request: Request) {
   try {
@@ -46,52 +44,47 @@ export async function POST(request: Request) {
       return NextResponse.json({ status: "success", image_url: idea.image_url });
     }
 
-    const hfToken = process.env.HUGGINGFACE_API_KEY;
-    if (!hfToken) {
-      return NextResponse.json(
-        {
-          status: "error",
-          message:
-            "HUGGINGFACE_API_KEY não configurada. Cria uma conta gratuita em huggingface.co e gera um token em huggingface.co/settings/tokens.",
-        },
-        { status: 500 },
-      );
-    }
-
     const formatMap: Record<string, string> = {
-      stories: "Instagram Stories, vertical 9:16",
-      reels: "Instagram Reels, vertical 9:16",
-      carousel: "Carrossel Instagram, múltiplos slides",
+      stories: "vertical 9:16",
+      reels: "vertical 9:16",
+      carousel: "horizontal 1:1 (slide thumbnail)",
     };
 
-    const prompt = `Social media content visual: ${idea.idea_title}. ${idea.idea_description}. Format: ${formatMap[idea.format] ?? idea.format}. Target: ${idea.target_audience ?? "general audience"}. Mood: ${idea.mood ?? "professional"}. Photorealistic, high quality, well composed.`;
+    const formatDesc = formatMap[idea.format as string] ?? "1:1";
 
-    const hfRes = await fetch(HF_API_URL, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${hfToken}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ inputs: prompt }),
-    });
+    const svgPrompt = `Generate a visually stunning SVG illustration for a social media post.
 
-    if (!hfRes.ok) {
-      const errText = await hfRes.text();
-      console.error("[generate-image] Hugging Face error:", hfRes.status, errText);
-      return NextResponse.json(
-        { status: "error", message: "Erro ao gerar imagem com IA" },
-        { status: 500 },
-      );
+Title: "${idea.idea_title}"
+Description: "${idea.idea_description || ""}"
+Format: ${formatDesc}
+Target audience: ${idea.target_audience || "general"}
+Mood: ${idea.mood || "professional"}
+
+Requirements:
+- Modern, clean, visually appealing design
+- Use a beautiful color palette appropriate for the mood
+- Include readable typography (title as text)
+- Use shapes, gradients, icons, or illustrations
+- Aspect ratio: ${formatDesc}
+- Return ONLY valid SVG code inside \`\`\`svg...\`\`\` — no explanations`;
+
+    const svgRaw = await generateGeminiContent(
+      "You are a professional graphic designer specialized in social media visuals. Generate high-quality SVG images only.",
+      svgPrompt,
+    );
+
+    const svgMatch = svgRaw.match(/```svg\s*([\s\S]*?)```/);
+    const svgCode = svgMatch?.[1]?.trim() || svgRaw.trim();
+
+    if (!svgCode.startsWith("<svg")) {
+      throw new Error("Gemini não gerou SVG válido");
     }
 
-    const arrayBuffer = await hfRes.arrayBuffer();
-    const buffer = Buffer.from(arrayBuffer);
-    const fileName = `idea-${idea_id}.png`;
-
-    const { data: uploadData, error: uploadError } = await (admin as any).storage
+    const fileName = `idea-${idea_id}.svg`;
+    const { error: uploadError } = await (admin as any).storage
       .from("idea-images")
-      .upload(fileName, buffer, {
-        contentType: "image/png",
+      .upload(fileName, svgCode, {
+        contentType: "image/svg+xml",
         upsert: true,
       });
 
@@ -103,26 +96,18 @@ export async function POST(request: Request) {
         await (admin as any).storage.createBucket("idea-images", {
           public: true,
         });
-        const { data: retryData, error: retryError } = await (admin as any).storage
+        const { error: retryError } = await (admin as any).storage
           .from("idea-images")
-          .upload(fileName, buffer, {
-            contentType: "image/png",
+          .upload(fileName, svgCode, {
+            contentType: "image/svg+xml",
             upsert: true,
           });
 
         if (retryError) {
-          console.error("[generate-image] Upload retry error:", retryError);
-          return NextResponse.json(
-            { status: "error", message: "Erro ao guardar imagem" },
-            { status: 500 },
-          );
+          throw new Error(`Upload retry failed: ${retryError.message}`);
         }
       } else {
-        console.error("[generate-image] Upload error:", uploadError);
-        return NextResponse.json(
-          { status: "error", message: "Erro ao guardar imagem" },
-          { status: 500 },
-        );
+        throw new Error(`Upload failed: ${uploadError.message}`);
       }
     }
 
@@ -141,9 +126,11 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ status: "success", image_url: imageUrl });
   } catch (error) {
-    console.error("[generate-image] Erro:", error);
+    const message =
+      error instanceof Error ? error.message : "Erro ao processar pedido";
+    console.error("[generate-image] Erro:", message);
     return NextResponse.json(
-      { status: "error", message: "Erro ao processar pedido" },
+      { status: "error", message },
       { status: 500 },
     );
   }

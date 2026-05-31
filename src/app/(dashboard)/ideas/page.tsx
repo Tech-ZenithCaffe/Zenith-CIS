@@ -197,6 +197,7 @@ function IdeaDetailModal({
                 alt={idea.title}
                 className="w-full rounded-lg border border-neutral-200 object-cover"
                 style={{ aspectRatio: "16/9" }}
+                onError={() => { setImageUrl(null); setImageError("Erro ao carregar imagem"); }}
               />
             ) : imageError ? (
               <div className="flex aspect-video items-center justify-center rounded-lg bg-amber-50 px-4">
