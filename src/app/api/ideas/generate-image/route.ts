@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { generateImage } from "@/lib/image-generator";
 import { generateSvg } from "@/lib/svg-template";
 
 export async function POST(request: Request) {
@@ -44,19 +45,34 @@ export async function POST(request: Request) {
       return NextResponse.json({ status: "success", image_url: idea.image_url });
     }
 
-    const svgCode = generateSvg({
+    const ideaData = {
       title: idea.idea_title,
       description: idea.idea_description,
       format: idea.format,
       targetAudience: idea.target_audience,
       mood: idea.mood,
-    });
+    };
 
-    const fileName = `idea-${idea_id}.svg`;
+    let imageBuffer: Buffer;
+    let ext: string;
+    let contentType: string;
+
+    try {
+      imageBuffer = await generateImage(ideaData);
+      ext = "png";
+      contentType = "image/png";
+    } catch {
+      const svgCode = generateSvg(ideaData);
+      imageBuffer = Buffer.from(svgCode);
+      ext = "svg";
+      contentType = "image/svg+xml";
+    }
+
+    const fileName = `idea-${idea_id}.${ext}`;
     const { error: uploadError } = await (admin as any).storage
       .from("idea-images")
-      .upload(fileName, svgCode, {
-        contentType: "image/svg+xml",
+      .upload(fileName, imageBuffer, {
+        contentType,
         upsert: true,
       });
 
@@ -70,8 +86,8 @@ export async function POST(request: Request) {
         });
         const { error: retryError } = await (admin as any).storage
           .from("idea-images")
-          .upload(fileName, svgCode, {
-            contentType: "image/svg+xml",
+          .upload(fileName, imageBuffer, {
+            contentType,
             upsert: true,
           });
 
