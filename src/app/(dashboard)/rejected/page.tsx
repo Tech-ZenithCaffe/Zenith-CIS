@@ -18,6 +18,11 @@ export default function RejectedPage() {
     created_at: string;
   }>>([]);
   const [loading, setLoading] = useState(true);
+  const [confirmDelete, setConfirmDelete] = useState<{
+    id: string;
+    title: string;
+  } | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     fetch("/api/ideas/feedback")
@@ -31,9 +36,13 @@ export default function RejectedPage() {
       .finally(() => setLoading(false));
   }, []);
 
-  async function deleteFeedback(id: string) {
-    await fetch(`/api/ideas/feedback?id=${id}`, { method: "DELETE" });
-    setFeedbackList((prev) => prev.filter((f) => f.id !== id));
+  async function confirmDeleteFeedback() {
+    if (!confirmDelete) return;
+    setDeleting(true);
+    await fetch(`/api/ideas/feedback?id=${confirmDelete.id}`, { method: "DELETE" });
+    setFeedbackList((prev) => prev.filter((f) => f.id !== confirmDelete.id));
+    setConfirmDelete(null);
+    setDeleting(false);
   }
 
   return (
@@ -85,7 +94,7 @@ export default function RejectedPage() {
                 </p>
               </div>
               <button
-                onClick={() => deleteFeedback(fb.id)}
+                onClick={() => setConfirmDelete({ id: fb.id, title: fb.idea_title })}
                 className="ml-2 shrink-0 rounded-lg border border-red-200 px-3 py-1.5 text-xs font-medium text-red-600 transition-colors hover:bg-red-50"
               >
                 Apagar
@@ -94,6 +103,35 @@ export default function RejectedPage() {
           ))
         )}
       </div>
+
+      {confirmDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div className="mx-4 w-full max-w-sm rounded-xl bg-white p-6 shadow-xl">
+            <h3 className="font-display text-lg font-bold text-brand-900">
+              Apagar feedback
+            </h3>
+            <p className="mt-2 text-sm text-neutral-600">
+              Tens a certeza que desejas apagar o feedback de &ldquo;<span className="font-medium text-neutral-800">{confirmDelete.title}</span>&rdquo;? Esta ação não pode ser desfeita.
+            </p>
+            <div className="mt-6 flex justify-end gap-3">
+              <button
+                onClick={() => setConfirmDelete(null)}
+                disabled={deleting}
+                className="rounded-lg border border-neutral-300 px-4 py-2 text-sm font-medium text-neutral-600 transition-colors hover:bg-neutral-100 disabled:opacity-50"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={confirmDeleteFeedback}
+                disabled={deleting}
+                className="rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {deleting ? "A apagar..." : "Apagar"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
