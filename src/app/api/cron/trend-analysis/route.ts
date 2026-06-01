@@ -14,7 +14,7 @@ export async function GET(request: Request) {
   }
 
   try {
-    console.log("[Cron] Trend analysis executado com sucesso");
+    console.warn("[Cron] Trend analysis executado com sucesso");
 
     return NextResponse.json({
       status: "success",

@@ -1,7 +1,8 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import type { ContentIdea } from "@/types/content";
 
 const formatLabels: Record<string, string> = {
@@ -132,13 +133,15 @@ function IdeaDetailModal({
   const [imageUrl, setImageUrl] = useState<string | null>(idea.image_url);
   const [generatingImage, setGeneratingImage] = useState(false);
   const [imageError, setImageError] = useState<string | null>(null);
+  const imageRequested = useRef(false);
 
   useEffect(() => {
     if (idea.image_url) {
       setImageUrl(idea.image_url);
       return;
     }
-    if (generatingImage) return;
+    if (imageRequested.current) return;
+    imageRequested.current = true;
 
     setGeneratingImage(true);
     setImageError(null);
@@ -192,11 +195,14 @@ function IdeaDetailModal({
                 </div>
               </div>
             ) : imageUrl ? (
-              <img
+              <Image
                 src={imageUrl}
                 alt={idea.title}
+                width={800}
+                height={450}
                 className="w-full rounded-lg border border-neutral-200 object-cover"
                 style={{ aspectRatio: "16/9" }}
+                unoptimized
                 onError={() => { setImageUrl(null); setImageError("Erro ao carregar imagem"); }}
               />
             ) : imageError ? (

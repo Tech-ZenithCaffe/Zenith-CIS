@@ -60,9 +60,9 @@ function DayModal({
   day: number;
   packages: CalendarPackage[];
   onClose: () => void;
-  onSchedule: (pkgId: string, date: string) => void;
-  onUnschedule: (pkgId: string) => void;
-  onDelete: (pkgId: string) => void;
+  onSchedule: (_pkgId: string, _date: string) => void;
+  onUnschedule: (_pkgId: string) => void;
+  onDelete: (_pkgId: string) => void;
 }) {
   const dayStr = dateStr(year, month, day);
   const isFuture = new Date(dayStr) >= new Date(getToday().year, getToday().month - 1, getToday().day);

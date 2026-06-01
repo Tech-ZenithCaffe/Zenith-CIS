@@ -17,9 +17,9 @@ export abstract class BaseService {
   protected log(message: string, data?: Record<string, unknown>): void {
     const prefix = `${this.serviceName}`;
     if (data) {
-      console.log(prefix, message, data);
+      console.warn(prefix, message, data);
     } else {
-      console.log(prefix, message);
+      console.warn(prefix, message);
     }
   }
 

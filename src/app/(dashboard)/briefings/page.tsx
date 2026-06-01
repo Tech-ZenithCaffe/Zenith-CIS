@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
+import Image from "next/image";
 
 type Briefing = {
   id: string;
@@ -34,7 +35,6 @@ function formatFileSize(bytes: number | null): string {
 }
 
 function getFileIcon(type: string | null) {
-  const label = FILE_TYPE_LABELS[type ?? ""] ?? "Ficheiro";
   const isImage = type?.startsWith("image/");
   const isVideo = type?.startsWith("video/");
   const isPdf = type === "application/pdf";
@@ -268,10 +268,13 @@ export default function BriefingsPage() {
                 {b.file_url && (
                   <div className="mt-2">
                     {b.file_type?.startsWith("image/") ? (
-                      <img
-                        src={b.file_url}
+                      <Image
+                        src={b.file_url ?? ""}
                         alt={b.title}
+                        width={400}
+                        height={300}
                         className="max-h-40 rounded-lg border border-neutral-200 object-cover"
+                        unoptimized
                       />
                     ) : (
                       <a
