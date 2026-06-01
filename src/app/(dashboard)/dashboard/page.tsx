@@ -64,7 +64,7 @@ export default function DashboardPage() {
         <h2 className="font-display text-lg font-semibold text-brand-800">
           Primeiros Passos
         </h2>
-        <div className="mt-4 grid gap-4 sm:grid-cols-3">
+        <div className="mt-4 grid gap-4 sm:grid-cols-2">
           <div className="rounded-lg border border-brand-100 bg-brand-50 p-4">
             <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-brand-100 text-brand-700">
               <span className="text-lg font-bold">1</span>
@@ -94,22 +94,6 @@ export default function DashboardPage() {
               className="mt-3 inline-block text-sm font-medium text-brand-600 hover:text-brand-700"
             >
               Ir para Calendário →
-            </Link>
-          </div>
-
-          <div className="rounded-lg border border-brand-100 bg-brand-50 p-4">
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-brand-100 text-brand-700">
-              <span className="text-lg font-bold">3</span>
-            </div>
-            <h3 className="mt-3 font-medium text-brand-800">Configurar Conta</h3>
-            <p className="mt-1 text-sm text-neutral-600">
-              Define o teu mercado e preferências.
-            </p>
-            <Link
-              href="/settings"
-              className="mt-3 inline-block text-sm font-medium text-brand-600 hover:text-brand-700"
-            >
-              Ir para Definições →
             </Link>
           </div>
         </div>
